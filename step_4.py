@@ -4,15 +4,18 @@ import random
 import torch
 import datetime
 import torch.nn as nn
+import torch.optim as optim
 from torch.utils.data import DataLoader, TensorDataset
 from sklearn.model_selection import train_test_split
-from sklearn.preprocessing import StandardScaler, LabelEncoder
-from sklearn.metrics import mean_absolute_error, mean_squared_error
+from sklearn.feature_extraction.text import TfidfVectorizer
+from sklearn.preprocessing import StandardScaler, LabelEncoder, MultiLabelBinarizer
+from sklearn.metrics import mean_absolute_error, mean_squared_error, r2_score
 from transformers import AutoTokenizer, AutoModel
 from tqdm import tqdm
 import matplotlib.pyplot as plt
+import seaborn as sns
 from torch.nn import functional as F
-
+from torch.optim.lr_scheduler import ReduceLROnPlateau
 
 # Set random seeds for reproducibility
 seed_value = 42
@@ -21,7 +24,6 @@ np.random.seed(seed_value)
 torch.manual_seed(seed_value)
 torch.cuda.manual_seed_all(seed_value)
 
-# printing the time to know how long the code running
 current_time = datetime.datetime.now()
 print(f"\033[35mCurrent time: {current_time}\033[0m")
 
@@ -57,7 +59,7 @@ def get_bert_embeddings(texts, tokenizer, model, max_length=512):
 
 
 # Load the data
-file_path = 'filtered_with_review.csv '
+file_path = 'filtered_with_review.csv'
 data = pd.read_csv(file_path)
 
 data = data.drop(columns=['orig_title'])
@@ -89,8 +91,6 @@ data['budget_x'] = data['budget_x'].fillna(data['budget_x'].median())
 data['score'] = data['score'].fillna(data['score'].median())
 data['names'] = data['names'].fillna('Unknown')
 data['genre'] = data['genre'].fillna('Unknown')
-data['crew'] = data['crew'].fillna('')
-data['review'] = data['review'].fillna('')
 
 # Initialize BERT for text processing
 print("Initializing BERT model and tokenizer...")
@@ -108,10 +108,23 @@ def get_first_ten(text):
     if pd.isna(text):  # Handle NaN/None values
         return text
     names = [name.strip() for name in str(text).split(',')]
-    return ', '.join(names[:5])
+    return ', '.join(names[:10])
+
+
+print("Processing movie crew with BERT...")
+data['crew'] = data['crew'].fillna('')
+data['crew'].str.split(',')
+# Apply the function to the specified column
+data['crew'] = data['crew'].apply(get_first_ten)
+crew_embeddings = get_bert_embeddings(data['crew'].tolist(), tokenizer, model)
+crew_df = pd.DataFrame(
+    crew_embeddings,
+    columns=[f"crew_bert_{i}" for i in range(crew_embeddings.shape[1])]
+)
 
 # Process overview using BERT
 print("Processing review text data with BERT...")
+data['review'] = data['review'].fillna('')
 review_embeddings = get_bert_embeddings(data['review'].tolist(), tokenizer, model)
 review_df = pd.DataFrame(
     review_embeddings,
@@ -125,38 +138,20 @@ names_df = pd.DataFrame(
     names_embeddings,
     columns=[f"name_bert_{i}" for i in range(names_embeddings.shape[1])]
 )
+# Remove the original 'names' column as we now have embeddings
+data = data.drop(columns=['names'])
 
-# Process movie genre using BERT
 print("\nProcessing movie genre with BERT...")
 genre_embeddings = get_bert_embeddings(data['genre'].tolist(), tokenizer, model)
 genre_df = pd.DataFrame(
     genre_embeddings,
     columns=[f"genre_bert_{i}" for i in range(genre_embeddings.shape[1])]
 )
+data = data.drop(columns=['genre'])
 
 # Combine all features
-data = pd.concat([data, names_df, review_df, genre_df], axis=1)
-# Remove the original columns as we now have embeddings
-data = data.drop(columns=['overview', 'review', 'genre', 'names'])
-
-# Process crew using BERT
-print("Processing movie crew with BERT...")
-data['crew'].str.split(',')
-data['crew'] = data['crew'].apply(get_first_ten)
-crew_embeddings = get_bert_embeddings(data['crew'].tolist(), tokenizer, model)
-crew_df = pd.DataFrame(
-    crew_embeddings,
-    columns=[f"crew_bert_{i}" for i in range(crew_embeddings.shape[1])]
-)
-
-# saving the data, so I could use it without do all the process every time
-data.to_csv("output_before_crew.csv", index=False)
-print("saved the data frame to output_before_crew.csv")
-
-# Combine all features
-data = pd.concat([crew_df], axis=1)
-# Remove the original columns as we now have embeddings
-data = data.drop(columns=['crew'])
+data = pd.concat([data, names_df, crew_df, review_df, genre_df], axis=1)
+data = data.drop(columns=['crew', 'overview', 'review'])
 
 print("Data shape after processing:", data.shape)
 
@@ -168,13 +163,11 @@ data = data[~((data['revenue'] < (Q1 - 1.5 * IQR)) | (data['revenue'] > (Q3 + 1.
 
 print("Data shape after outlier removal:", data.shape)
 
-# saving the data, so I could use it without do all the process every time
-data.to_csv("output_just_review5.csv", index=False)
+data.to_csv("output_just_review.csv", index=False)
 print("saved the data frame to output.csv")
-#
-# # if we use the saved data
-# file_path = 'output_just_review.csv'
-# data = pd.read_csv(file_path)
+
+file_path = 'output_just_review.csv'
+data = pd.read_csv(file_path)
 
 # Separate features (X) and target (y)
 X = data.drop(columns=['revenue'])
@@ -343,7 +336,7 @@ def train_model(model, train_loader, val_loader, epochs=150):
 
 
 # Rest of the code remains the same
-batch_size = 64
+batch_size = 32
 train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True)
 val_loader = DataLoader(val_dataset, batch_size=batch_size)
 test_loader = DataLoader(test_dataset, batch_size=batch_size)
@@ -373,6 +366,7 @@ y_test = y_scaler.inverse_transform(y_test.reshape(-1, 1)).squeeze()
 # Calculate regression metrics
 mae = mean_absolute_error(y_test, y_pred)
 mse = mean_squared_error(y_test, y_pred)
+rmse = np.sqrt(mse)
 
 print("Evaluation Metrics:")
 print(f"Mean Absolute Error (MAE):        ${mae:,.2f}")
