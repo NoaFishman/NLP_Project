@@ -81,10 +81,11 @@ text_transformer = Pipeline([
         )
     )),
     ('vectorizer', TfidfVectorizer(
-        max_features=1000,
+        max_features=500,
         ngram_range=(1, 2),
         min_df=2,
-        max_df=0.95
+        max_df=0.95,
+        stop_words='english'
     ))
 ])
 
@@ -146,7 +147,7 @@ train_mse = mean_squared_error(y_train, y_train_pred)
 test_mse = mean_squared_error(y_test, y_test_pred)
 
 # Print evaluation metrics
-print("\nRegression Metrics:")
+print("\nEvaluation Metrics:")
 print(f"Mean Absolute Error (MAE):        ${test_mae:,.2f}")
 print(f"Mean Squared Error (MSE):         ${test_mse:,.2f}")
 print(f"Root Mean Squared Error (RMSE):   ${np.sqrt(test_mse):,.2f}")

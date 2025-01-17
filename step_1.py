@@ -29,7 +29,7 @@ train_df, test_df = train_test_split(df_cleaned, test_size=0.2, random_state=42)
 
 # Compute the average revenue from the training set
 average_revenue = train_df['revenue'].mean()
-print(f"Average Revenue is {average_revenue}")
+print(f"Average Revenue is ${average_revenue:,.2f}")
 
 # Predict the average revenue for both training and test sets
 train_baseline_preds = [average_revenue] * len(train_df)

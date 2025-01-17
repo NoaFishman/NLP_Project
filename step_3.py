@@ -74,8 +74,14 @@ data['status_encoded'] = status_encoder.fit_transform(data['status'])
 data = data.drop(columns=['status'])
 
 # Process text features 'crew' and 'overview' using Bag of Words
-vectorizer_crew = TfidfVectorizer(max_features=500, stop_words='english')
-vectorizer_review = TfidfVectorizer(max_features=500, stop_words='english')
+vectorizer_crew = TfidfVectorizer(max_features=500,
+                                  ngram_range=(1, 2),
+                                  min_df=2,
+                                  max_df=0.95, stop_words='english')
+vectorizer_review = TfidfVectorizer(max_features=500,
+                                    ngram_range=(1, 2),
+                                    min_df=2,
+                                    max_df=0.95, stop_words='english')
 
 X_crew = vectorizer_crew.fit_transform(data['crew']).toarray()
 X_review = vectorizer_review.fit_transform(data['review']).toarray()
@@ -227,7 +233,7 @@ for epoch in range(epochs):
     train_losses.append(train_loss / len(train_loader))
     val_losses.append(val_loss / len(val_loader))
 
-    print(f"Epoch {epoch+1}/{epochs}, Train Loss: {train_losses[-1]:.4f}, Validation Loss: {val_losses[-1]:.4f}")
+    print(f"Epoch {epoch + 1}/{epochs}, Train Loss: {train_losses[-1]:.4f}, Validation Loss: {val_losses[-1]:.4f}")
 
     if val_loss < best_val_loss:
         best_val_loss = val_loss
