@@ -14,7 +14,7 @@ Each model demonstrates improvements in prediction accuracy, with the final BERT
 
 ## Dataset
 
-The project combines two datasets from Kaggle:
+The project combines two datasets from Kaggle to data set call filtered_with_review:
 - [IMDB Movies Dataset](https://www.kaggle.com/datasets/ashpalsingh1525/imdb-movies-dataset/data)
 - [48,000+ Movies Dataset](https://www.kaggle.com/datasets/yashgupta24/48000-movies-dataset)
 
@@ -85,43 +85,6 @@ torch
 transformers
 ```
 
-## Usage
-
-1. Clone the repository:
-```bash
-git clone https://github.com/NoaFishman/NLP_Project.git
-```
-
-2. Install required packages:
-```bash
-pip install -r requirements.txt
-```
-
-3. Run the models:
-```python
-# Example for running the BERT model
-python bert_model.py
-```
-
-## Project Structure
-
-```
-NLP_Project/
-├── data/
-│   ├── imdb_movies.csv
-│   └── movies_dataset.csv
-├── models/
-│   ├── baseline_model.py
-│   ├── linear_regression.py
-│   ├── neural_network.py
-│   └── bert_model.py
-├── utils/
-│   ├── data_preprocessing.py
-│   └── evaluation_metrics.py
-├── requirements.txt
-└── README.md
-```
-
 ## Future Work
 
 Potential improvements and extensions:
@@ -129,11 +92,3 @@ Potential improvements and extensions:
 - Explore alternative transformer-based language models
 - Develop ensemble methods combining multiple architectures
 - Add more features related to movie marketing and distribution
-
-## Contributors
-
-[Your Name]
-
-## License
-
-[Specify your license here]
