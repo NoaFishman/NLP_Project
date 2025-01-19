@@ -4,18 +4,14 @@ import random
 import torch
 import datetime
 import torch.nn as nn
-import torch.optim as optim
 from torch.utils.data import DataLoader, TensorDataset
 from sklearn.model_selection import train_test_split
-from sklearn.feature_extraction.text import TfidfVectorizer
-from sklearn.preprocessing import StandardScaler, LabelEncoder, MultiLabelBinarizer
-from sklearn.metrics import mean_absolute_error, mean_squared_error, r2_score
+from sklearn.preprocessing import StandardScaler, LabelEncoder
+from sklearn.metrics import mean_absolute_error, mean_squared_error
 from transformers import AutoTokenizer, AutoModel
 from tqdm import tqdm
 import matplotlib.pyplot as plt
-import seaborn as sns
 from torch.nn import functional as F
-from torch.optim.lr_scheduler import ReduceLROnPlateau
 
 # Set random seeds for reproducibility
 seed_value = 42
@@ -29,9 +25,7 @@ print(f"\033[35mCurrent time: {current_time}\033[0m")
 
 
 def get_bert_embeddings(texts, tokenizer, model, max_length=512):
-    """
-    Generate BERT embeddings for a list of texts
-    """
+    """ Generate BERT embeddings for a list of texts """
     embeddings_list = []
     batch_size = 32
 
@@ -406,6 +400,7 @@ plt.ylim(-0.1, 2.2)
 plt.gca().set_aspect('auto')  # Allows the axes to scale automatically
 plt.legend()
 plt.show()
+
 
 end_time = datetime.datetime.now()
 elapsed_time = end_time - current_time
